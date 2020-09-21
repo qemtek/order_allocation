@@ -3,11 +3,12 @@
 from gousto_test.generate_data import DataGenerator
 from gousto_test.order_allocation import RecipeAllocator
 
-generator = DataGenerator()
-generator.generate_recipes("recipes.json")
-generator.generate_orders("orders.json")
+# Uncomment and run this to generate new data
+# generator = DataGenerator()
+# generator.generate_recipes(save_dir="recipes.json")
+# generator.generate_orders(save_dir="orders.json")
 
 allocator = RecipeAllocator()
 leftover_stock = allocator.run(
-    orders_dir="orders.json", recipes_dir="recipes.json"
+    orders_dir="orders_original.json", recipes_dir="recipes_original.json"
 )
