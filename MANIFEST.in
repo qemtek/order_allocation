@@ -2,6 +2,7 @@ include *.txt
 include *.md
 include *.cfg
 include *.pkl
+include *.keep
 
 recursive-include gousto_test/*
 recursive-include tests/*
