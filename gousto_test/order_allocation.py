@@ -17,6 +17,7 @@ class RecipeAllocator:
         self.recipe_categories = None
         self.portion_categories_dict = dict()
         self.recipe_categories_dict = dict()
+        self.box_types = list()
         self.acceptable_box_types = ["gourmet", "vegetarian"]
         self.verbose = verbose
         # Placeholder for excess stock after allocation
@@ -41,6 +42,12 @@ class RecipeAllocator:
         self.recipes = self.load_json(recipes_dir)
         # Scrape the distinct categories from the objects
         self.get_categories_from_json()
+        # Check that vegetarian and gourmet exist as box_type categories
+        for box_type in ["vegetarian", "gourmet"]:
+            assert box_type in self.box_types, (
+                f"Could not find {box_type} as a box_type category. The logic of this algorithm "
+                "requires that vegetarian and gourmet exist as box types."
+            )
 
     def get_orders(self):
         """Return the orders object"""
@@ -59,20 +66,37 @@ class RecipeAllocator:
         and that all recipes come in the same portion sizes.
         """
         if self.orders is not None and isinstance(self.orders, dict):
+            self.box_types = list(self.orders.keys())
             self.recipe_categories = list(self.orders["gourmet"].keys())
             # Create a mapping between the recipe word and the recipe number
             for recipe in self.recipe_categories:
-                self.recipe_categories_dict[recipe] = w2n.word_to_num(
-                    recipe.split("_")[0]
-                )
+                try:
+                    self.recipe_categories_dict[recipe] = w2n.word_to_num(
+                        recipe.split("_")[0]
+                    )
+                except ValueError as e:
+                    raise Exception(
+                        f"Couldnt extract the number of recipes from the category. "
+                        f"The logic of this algorithm assumes that category names are "
+                        f"seperated by _ and the first word is the number. E.g. 'two_recipes. "
+                        f"original error message: {e}"
+                    )
             self.portion_categories = list(
                 self.orders["gourmet"][self.recipe_categories[1]].keys()
             )
             # Create a mapping between the portion word and the portion number
             for portion in self.portion_categories:
-                self.portion_categories_dict[portion] = w2n.word_to_num(
-                    portion.split("_")[0]
-                )
+                try:
+                    self.portion_categories_dict[portion] = w2n.word_to_num(
+                        portion.split("_")[0]
+                    )
+                except ValueError as e:
+                    raise Exception(
+                        f"Couldnt extract the number of portions from the category. "
+                        f"The logic of this algorithm assumes that category names are "
+                        f"seperated by _ and the first word is the number. E.g. 'two_portions. "
+                        f"original error message: {e}"
+                    )
         else:
             logger.error(
                 "There was a problem obtaining categories from the data, has the data been loaded correctly?"
@@ -80,7 +104,7 @@ class RecipeAllocator:
 
     @staticmethod
     @time_function(logger=logger)
-    def fullfill_orders(
+    def assign_order_group(
         *, df_stock, num_portions, num_recipes, num_orders, verbose=True
     ):
         """Work out how many orders we can fullfill, given a list of recipes and their stock
@@ -190,8 +214,18 @@ class RecipeAllocator:
                     list(portion_dict.values()).index(portion_num)
                 ]
                 # Get the orders to fulfill for the recipe and portion combination
-                orders_to_fulfill = orders[recipe_category][portion_category]
-                df = self.fullfill_orders(
+                try:
+                    orders_to_fulfill = orders[recipe_category][
+                        portion_category
+                    ]
+                except KeyError as e:
+                    raise Exception(
+                        f"recipe: {recipe_category}, portion: {portion_category} does not "
+                        f"exist for the {box_type} customer group. This code assumes that "
+                        f"all customer groups have the same categories. Please change the "
+                        f"way categories are scraped if this is no longer true. Error message: {e}"
+                    )
+                df = self.assign_order_group(
                     df_stock=df,
                     num_portions=portion_num,
                     num_recipes=recipe_num,
