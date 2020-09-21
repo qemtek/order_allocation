@@ -6,3 +6,4 @@
 venv/*
 *.pyc
 gousto_test.egg-info/*
+.DS_Store
