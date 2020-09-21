@@ -2,6 +2,7 @@ import json
 import pandas as pd
 import numpy as np
 from word2number import w2n
+import os
 
 from gousto_test.utils.logging import get_logger
 from gousto_test.utils.general import time_function
@@ -37,7 +38,13 @@ class RecipeAllocator:
     def load_data(self, orders_dir="orders.json", recipes_dir="recipes.json"):
         """Load order and recipe data from a json file"""
         # Try to load the orders json
+        assert os.path.exists(
+            orders_dir
+        ), "Cannot find the directory for the orders JSON, did you specify it correctly?"
         self.orders = self.load_json(orders_dir)
+        assert os.path.exists(
+            recipes_dir
+        ), "Cannot find the directory for the recipes JSON, did you specify it correctly?"
         # Try to load the recipes json
         self.recipes = self.load_json(recipes_dir)
         # Scrape the distinct categories from the objects

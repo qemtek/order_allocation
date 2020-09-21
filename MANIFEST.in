@@ -7,6 +7,5 @@ recursive-include gousto_test/*
 recursive-include tests/*
 
 include ./requirements.txt
-exclude *.log
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
